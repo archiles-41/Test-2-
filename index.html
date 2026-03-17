@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phishing URL Detector</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0;
+           background: #f9f9f9; color: #333; transition: background 0.3s, color 0.3s; }
+    body.dark { background: #121212; color: #eee; }
+    header { display: flex; justify-content: space-between; align-items: center;
+             padding: 1rem; background: #0077cc; color: white; }
+    #theme-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; }
+    main { padding: 2rem; max-width: 800px; margin: auto; }
+    .risk-meter { width: 100%; height: 20px; background: #ddd; border-radius: 10px; margin: 1rem 0; }
+    .bar { height: 100%; border-radius: 10px; }
+    .explanation, .domain-features { margin-top: 1.5rem; }
+    .explanation ul, .domain-features ul { list-style: none; padding: 0; }
+    .explanation li, .domain-features li { margin: 0.3rem 0; }
+    footer { text-align: center; padding: 1rem; background: #0077cc; color: white; }
+    input[type=text] { width: 70%; padding: 0.5rem; }
+    button.analyze { padding: 0.5rem 1rem; margin-left: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Phishing URL Detector</h1>
+    <button id="theme-toggle">🌙</button>
+  </header>
+
+  <main>
+    <h2>Enter a URL to Analyze</h2>
+    <input type="text" id="url-input" placeholder="https://example.com">
+    <button class="analyze" onclick="analyzeURL()">Analyze</button>
+
+    <h2>Confidence Score</h2>
+    <p>Phishing probability: <span id="probability">0%</span></p>
+    <div class="risk-meter">
+      <div class="bar" id="risk-bar" style="width:0%; background:green;"></div>
+    </div>
+
+    <section class="explanation">
+      <h3>Phishing Explanation</h3>
+      <ul id="explanation-list"></ul>
+    </section>
+
+    <section class="domain-features">
+      <h3>Domain Features</h3>
+      <ul>
+        <li>Domain length: <span id="domain-length">-</span></li>
+        <li>Subdomain count: <span id="subdomain-count">-</span></li>
+        <li>Suspicious TLD: <span id="tld">-</span></li>
+        <li>Age of domain: <span id="domain-age">N/A (demo)</span></li>
+        <li>DNS record existence: <span id="dns-record">N/A (demo)</span></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Built with ❤️ for security awareness
+  </footer>
+
+  <script>
+    // Theme toggle
+    const toggle = document.getElementById('theme-toggle');
+    toggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      toggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    });
+
+    function updateRisk(probability) {
+      const bar = document.getElementById('risk-bar');
+      bar.style.width = probability + '%';
+      if (probability < 40) bar.style.background = 'green';
+      else if (probability < 70) bar.style.background = 'yellow';
+      else bar.style.background = 'red';
+      document.getElementById('probability').textContent = probability + '%';
+    }
+
+    function analyzeURL() {
+      const url = document.getElementById('url-input').value.trim();
+      const explanationList = document.getElementById('explanation-list');
+      explanationList.innerHTML = "";
+
+      if (!url) return;
+
+      try {
+        const parsed = new URL(url);
+        const domain = parsed.hostname;
+        const tld = domain.split('.').pop();
+        const subdomains = domain.split('.').length - 2;
+        const length = domain.length;
+
+        // Update domain features
+        document.getElementById('domain-length').textContent = length;
+        document.getElementById('subdomain-count').textContent = subdomains;
+        document.getElementById('tld').textContent = "." + tld;
+
+        let score = 0;
+
+        // Checks
+        if (length > 30) { score += 15; addReason("✔ URL too long"); }
+        if (subdomains > 2) { score += 10; addReason("✔ Too many subdomains"); }
+        if (["tk","ml","ga","cf","gq"].includes(tld)) { score += 20; addReason("✔ Suspicious TLD: ." + tld); }
+        if (url.includes("@")) { score += 15; addReason("✔ Contains @ symbol"); }
+        if (url.includes("verify")) { score += 10; addReason("✔ Suspicious keyword: verify"); }
+
+        // Extra checks
+        const hyphens = (domain.match(/-/g) || []).length;
+        if (hyphens > 2) { score += 10; addReason("✔ Too many hyphens"); }
+
+        const digits = (domain.match(/[0-9]/g) || []).length;
+        if (digits > 5) { score += 10; addReason("✔ Too many digits"); }
+
+        const slashes = (url.match(/\//g) || []).length;
+        if (slashes > 5) { score += 10; addReason("✔ Too many slashes"); }
+
+        // Simple entropy approximation: unique chars vs length
+        const uniqueChars = new Set(domain).size;
+        const entropyRatio = uniqueChars / length;
+        if (entropyRatio < 0.3) { score += 10; addReason("✔ Random-looking domain pattern"); }
+
+        // Cap probability
+        if (score > 100) score = 100;
+        updateRisk(score);
+
+      } catch (e) {
+        addReason("Invalid URL format");
+        updateRisk(0);
+      }
+
+      function addReason(text) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        explanationList.appendChild(li);
+      }
+    }
+  </script>
+</body>
+</html>
