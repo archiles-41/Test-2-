@@ -106,7 +106,8 @@ function analyzeURL() {
   let isInvalid = false;
 
   try {
-    const parsed = new URL(url);
+    const normalizedUrl = url.includes('://') ? url : 'http://' + url;
+    const parsed = new URL(normalizedUrl);
     domain = parsed.hostname;
   } catch (e) {
     isInvalid = true;
@@ -124,8 +125,13 @@ function analyzeURL() {
   }
 
   const parts = domain.split('.');
-  tld = parts.pop() || "";
-  subdomains = parts.length - 1;
+  if (parts.length > 1) {
+    tld = parts.pop();
+    subdomains = Math.max(0, parts.length - 1);
+  } else {
+    tld = "";
+    subdomains = 0;
+  }
   length = domain.length;
 
   document.getElementById('domain-length').textContent = length;
