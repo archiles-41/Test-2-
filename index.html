@@ -10,25 +10,55 @@ body {
   padding: 20px;
   background: #dbeeff;
 }
+
 .dark {
   background: #121212;
   color: white;
 }
+
 textarea {
   width: 90%;
-  height: 80px;
+  height: 100px;
   padding: 10px;
 }
+
 button {
   padding: 10px 15px;
   margin: 5px;
   cursor: pointer;
 }
-.bar {
+
+/* 🔴🟡🟢 Risk Dot */
+.risk-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+
+.green { background: #2ecc71; }
+.yellow { background: #f1c40f; }
+.red { background: #e74c3c; }
+
+/* 📊 Progress Bar */
+#progress-container {
+  width: 90%;
+  background: #ccc;
   height: 20px;
+  display: none;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+#progress-bar {
+  height: 100%;
   width: 0%;
   background: green;
+  transition: width 0.3s ease;
 }
+
 </style>
 </head>
 
@@ -37,11 +67,17 @@ button {
 <h1>🔍 Phishing URL Detector</h1>
 <button onclick="toggleTheme()">🌙</button>
 
-<textarea id="url-input" placeholder="Enter one or multiple URLs (each in new line)"></textarea><br>
+<textarea id="url-input" placeholder="Enter URLs (one per line)"></textarea><br>
 
 <button onclick="analyzeBatch()">Analyze</button>
 <button onclick="copyReport()">📋 Copy</button>
 <button onclick="downloadReport()">⬇ Download</button>
+
+<!-- 📊 Progress UI -->
+<div id="progress-container">
+  <div id="progress-bar"></div>
+</div>
+<p id="progress-text"></p>
 
 <h2 id="alert-text"></h2>
 
@@ -55,40 +91,93 @@ function playAlert() {
   audio.play();
 }
 
+// 🌙 THEME
 function toggleTheme() {
   document.body.classList.toggle("dark");
 }
 
+// ⌨️ ENTER KEY SUPPORT
+document.getElementById("url-input").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    analyzeBatch();
+  }
+});
+
 let reportData = "";
 
-// 🧪 BATCH ANALYSIS
+// 🧪 BATCH ANALYSIS WITH ANIMATION
 function analyzeBatch() {
+
   const input = document.getElementById("url-input").value.trim();
   const urls = input.split("\n").filter(u => u.trim() !== "");
   const resultsDiv = document.getElementById("results");
+  const alertText = document.getElementById("alert-text");
+
+  const progressBar = document.getElementById("progress-bar");
+  const progressContainer = document.getElementById("progress-container");
+  const progressText = document.getElementById("progress-text");
 
   resultsDiv.innerHTML = "";
   reportData = "";
+  alertText.innerText = "";
 
-  urls.forEach(url => {
-    const result = analyzeURL(url.trim());
-    resultsDiv.innerHTML += result.html;
-    reportData += result.text + "\n\n";
-  });
+  if (urls.length === 0) {
+    alertText.innerText = "⚠️ Please enter at least one URL";
+    return;
+  }
+
+  // Show progress UI
+  progressContainer.style.display = "block";
+  progressBar.style.width = "0%";
+  progressText.innerText = "🔍 Analyzing URLs...";
+
+  let index = 0;
+  let highRiskFound = false;
+
+  function processNext() {
+
+    if (index < urls.length) {
+
+      const result = analyzeURL(urls[index]);
+      resultsDiv.innerHTML += result.html;
+      reportData += result.text + "\n\n";
+
+      if (result.score >= 70) {
+        highRiskFound = true;
+      }
+
+      index++;
+
+      let percent = Math.floor((index / urls.length) * 100);
+      progressBar.style.width = percent + "%";
+      progressText.innerText = `🔍 Processing... ${percent}%`;
+
+      setTimeout(processNext, 300); // animation delay
+
+    } else {
+
+      progressText.innerText = "✅ Analysis Complete!";
+
+      if (highRiskFound) {
+        alertText.innerText = "🚨 High-risk URLs detected!";
+      } else {
+        alertText.innerText = "✅ No major threats found.";
+      }
+    }
+  }
+
+  processNext();
 }
 
-// 🔍 CORE FUNCTION
+// 🔍 CORE ANALYSIS FUNCTION
 function analyzeURL(url) {
 
   let score = 0;
-  let domainScore = 0;
-  let structureScore = 0;
-  let keywordScore = 0;
-
   let reasons = [];
 
   function addReason(text) {
-    reasons.push(text);
+    reasons.push("✔ " + text);
   }
 
   let domain = "";
@@ -98,96 +187,115 @@ function analyzeURL(url) {
     domain = parsed.hostname;
   } catch {
     score += 40;
-    structureScore += 40;
     addReason("Invalid URL format");
   }
 
-  // STRUCTURE CHECKS
-  if (url.includes("://:")) {
+  if (url.length > 100) {
     score += 20;
-    structureScore += 20;
-    addReason("Malformed structure");
+    addReason("URL too long");
+  }
+
+  const dotCount = (url.match(/\./g) || []).length;
+  if (dotCount > 5) {
+    score += 10;
+    addReason("Too many dots in URL");
+  }
+
+  const paramCount = (url.match(/&/g) || []).length;
+  if (paramCount > 5) {
+    score += 15;
+    addReason("Too many query parameters");
+  }
+
+  if (/redirect|click|track|adurl/i.test(url)) {
+    score += 20;
+    addReason("Contains redirect/tracking pattern");
   }
 
   if (url.includes("@")) {
     score += 15;
-    structureScore += 15;
     addReason("Contains @ symbol");
   }
 
-  // DOMAIN CHECKS
-  if (domain.length > 30) {
+  if (domain && domain.length > 30) {
     score += 15;
-    domainScore += 15;
-    addReason("Long domain");
+    addReason("Long domain name");
   }
 
-  if (/^[a-z0-9]{10,}$/i.test(domain.replace(/\./g, ""))) {
+  if (domain && /^[a-z0-9]{10,}$/i.test(domain.replace(/\./g, ""))) {
     score += 15;
-    domainScore += 15;
-    addReason("Random domain");
+    addReason("Random-looking domain");
   }
 
-  // KEYWORD CHECK
-  if (/verify|login|secure|account/i.test(url)) {
-    score += 10;
-    keywordScore += 10;
-    addReason("Suspicious keyword");
-  }
+  const keywords = ["verify", "login", "secure", "account", "update", "bank", "password", "signin"];
+  keywords.forEach(k => {
+    if (url.toLowerCase().includes(k)) {
+      score += 10;
+      addReason(`Suspicious keyword: ${k}`);
+    }
+  });
 
   if (score > 100) score = 100;
 
-  // ✅ SAFE MESSAGE FIX
-  if (score === 0) {
-    addReason("✔ This URL appears safe (no phishing indicators found)");
-  }
+  let colorClass = "green";
+  let label = "Safe";
 
-  // 🚨 SMART ALERT
   if (score >= 70) {
+    colorClass = "red";
+    label = "Phishing";
     playAlert();
-    alert("🚨 This looks dangerous. Proceed carefully.");
+  } else if (score >= 40) {
+    colorClass = "yellow";
+    label = "Suspicious";
   }
 
-  // UI OUTPUT
+  if (reasons.length === 0) {
+    reasons.push("✔ No major phishing indicators found");
+  }
+
   const html = `
     <hr>
-    <b>URL:</b> ${url}<br>
-    <b>Overall Risk:</b> ${score}%<br>
+    <b>🔗 URL:</b> ${url}<br><br>
 
-    <b>Breakdown:</b><br>
-    Domain Risk: ${domainScore}%<br>
-    Structure Risk: ${structureScore}%<br>
-    Keyword Risk: ${keywordScore}%<br>
+    ⭐ <b>Confidence Score:</b> ${score}%<br><br>
 
-    <b>Reasons:</b>
+    ⭐ <b>Risk Meter:</b> ${label}
+    <span class="risk-dot ${colorClass}"></span>
+    <br><br>
+
+    ⭐ <b>Explanation:</b>
     <ul>${reasons.map(r => `<li>${r}</li>`).join("")}</ul>
   `;
 
-  // TEXT REPORT
   const text = `
 URL: ${url}
-Overall Risk: ${score}%
-
-Breakdown:
-Domain: ${domainScore}%
-Structure: ${structureScore}%
-Keyword: ${keywordScore}%
+Phishing Probability: ${score}%
+Risk Level: ${label}
 
 Reasons:
-${reasons.join(", ")}
+${reasons.join("\n")}
 `;
 
-  return { html, text };
+  return { html, text, score };
 }
 
 // 📋 COPY
 function copyReport() {
+  if (!reportData) {
+    alert("Nothing to copy!");
+    return;
+  }
   navigator.clipboard.writeText(reportData);
   alert("Report copied!");
 }
 
 // ⬇ DOWNLOAD
 function downloadReport() {
+  if (!reportData) {
+    alert("Nothing to download!");
+    return;
+  }
+
   const blob = new Blob([reportData], { type: "text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
