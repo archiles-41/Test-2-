@@ -16,41 +16,36 @@ body {
 /* THEMES */
 
 /* ☀ Light */
-.light {
-  background: #dbeeff;
-  color: black;
-}
+.light { background:#dbeeff; color:black; }
 
 /* 🌙 Dark */
-.dark {
-  background: #121212;
-  color: white;
-}
+.dark { background:#121212; color:white; }
 
-/* 🟢 Terminal */
-.terminal {
+/* 🟢 Matrix */
+.matrix {
   background: black;
   color: #00ff9f;
   font-family: monospace;
 }
 
-/* 🟣 Cyberpunk */
+/* 🟣 Cyberpunk (Blade Runner Neon) */
 .cyber {
-  background: #0f0f1a;
-  color: #00f0ff;
+  background: #0a0a1a;
+  color: #ff2bd6;
 }
 
 .cyber h1 {
-  text-shadow: 0 0 8px #00f0ff;
+  text-shadow: 0 0 10px #ff2bd6, 0 0 20px #6a00ff;
 }
 
 .cyber button, .cyber textarea {
-  background: black;
+  background: #14001f;
   color: #00f0ff;
-  border: 1px solid #00f0ff;
+  border: 1px solid #ff2bd6;
+  box-shadow: 0 0 8px #6a00ff;
 }
 
-/* 📦 Container */
+/* CONTAINER */
 .container {
   max-width: 900px;
   margin: auto;
@@ -60,10 +55,10 @@ body {
 }
 
 .dark .container { background:#1e1e1e; }
-.terminal .container { background:black; border:1px solid #00ff9f; }
-.cyber .container { background:#1a1a2e; }
+.matrix .container { background:black; border:1px solid #00ff9f; }
+.cyber .container { background:#14001f; }
 
-/* BUTTONS */
+/* BUTTON */
 button {
   padding: 10px;
   margin: 5px;
@@ -78,13 +73,7 @@ textarea {
   height: 100px;
 }
 
-.terminal textarea {
-  background: black;
-  color: #00ff9f;
-  border: 1px solid #00ff9f;
-}
-
-/* CARD */
+/* RESULT CARD */
 .result-card {
   background: #f9f9f9;
   padding: 15px;
@@ -94,27 +83,39 @@ textarea {
 }
 
 .dark .result-card { background:#2a2a2a; }
-.terminal .result-card { border:1px solid #00ff9f; background:black; }
-.cyber .result-card { border:1px solid #00f0ff; }
+.matrix .result-card { border:1px solid #00ff9f; background:black; }
+.cyber .result-card { border:1px solid #ff2bd6; }
 
-/* BAR */
+/* RISK BAR */
 .risk-bar {
   height: 10px;
   transition: width 0.5s ease;
 }
 
-/* DOT */
+/* RISK DOT */
 .risk-dot {
   width: 12px;
   height: 12px;
   display:inline-block;
   border-radius:50%;
-  margin-right:5px;
+  margin-right:6px;
+  vertical-align:middle;
 }
 
-.green { background:#2ecc71; }
-.yellow { background:#f1c40f; }
-.red { background:#e74c3c; }
+/* GRAPH SECTION */
+.graph-container {
+  margin-top: 30px;
+  padding: 15px;
+  background: #ffffff;
+  border-radius: 10px;
+}
+
+.graph-bar {
+  height: 20px;
+  margin: 5px 0;
+  color: white;
+  padding-left: 5px;
+}
 
 </style>
 </head>
@@ -130,7 +131,7 @@ textarea {
     <option value="auto">Auto</option>
     <option value="light">Modern</option>
     <option value="dark">Dark</option>
-    <option value="terminal">Terminal</option>
+    <option value="matrix">Matrix</option>
     <option value="cyber">Cyberpunk</option>
   </select>
 </div>
@@ -146,26 +147,25 @@ textarea {
 <h2 id="alert-text"></h2>
 <div id="results"></div>
 
+<!-- 📊 GRAPH SECTION -->
+<div class="graph-container">
+  <h2>📊 Risk Overview</h2>
+  <div id="graph"></div>
+</div>
+
 </div>
 
 <script>
 
-// 🔔 SOUND
 function playAlert() {
   new Audio("https://www.soundjay.com/buttons/beep-03.wav").play();
 }
 
-// 🎭 APPLY THEME
 function applyTheme(theme) {
   document.body.className = "";
-
-  if (theme === "dark") document.body.classList.add("dark");
-  if (theme === "terminal") document.body.classList.add("terminal");
-  if (theme === "cyber") document.body.classList.add("cyber");
-  if (theme === "light") document.body.classList.add("light");
+  document.body.classList.add(theme);
 }
 
-// 🎯 SET THEME
 function setTheme(theme) {
   if (theme === "auto") {
     localStorage.removeItem("theme");
@@ -176,51 +176,35 @@ function setTheme(theme) {
   }
 }
 
-// 🧠 SYSTEM DETECTION
 function detectSystemTheme() {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyTheme(prefersDark ? "dark" : "light");
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(dark ? "dark" : "light");
 }
 
-// 🔄 LIVE SYSTEM CHANGE
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-  if (!localStorage.getItem("theme")) {
-    applyTheme(e.matches ? "dark" : "light");
-  }
-});
-
-// 💾 LOAD THEME
 window.onload = function() {
   const saved = localStorage.getItem("theme");
-
   if (saved) {
     applyTheme(saved);
     document.getElementById("themeSelect").value = saved;
   } else {
     detectSystemTheme();
-    document.getElementById("themeSelect").value = "auto";
   }
 };
 
-// ⌨️ ENTER SUPPORT
-document.getElementById("url-input").addEventListener("keydown", function(e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    analyzeBatch();
-  }
-});
-
 let reportData = "";
+let graphData = [];
 
-// 🧪 ANALYZE
 function analyzeBatch() {
 
   const urls = document.getElementById("url-input").value.split("\n");
   const resultsDiv = document.getElementById("results");
+  const graphDiv = document.getElementById("graph");
   const alertText = document.getElementById("alert-text");
 
   resultsDiv.innerHTML = "";
+  graphDiv.innerHTML = "";
   reportData = "";
+  graphData = [];
 
   let highRisk = false;
 
@@ -230,14 +214,24 @@ function analyzeBatch() {
     const result = analyzeURL(url.trim());
     resultsDiv.innerHTML += result.html;
     reportData += result.text + "\n\n";
+    graphData.push(result);
 
     if (result.score >= 70) highRisk = true;
   });
 
   alertText.innerText = highRisk ? "🚨 High-risk URLs detected!" : "✅ No major threats";
+
+  // 📊 GRAPH RENDER
+  graphData.forEach(r => {
+    const bar = document.createElement("div");
+    bar.className = "graph-bar";
+    bar.style.width = r.score + "%";
+    bar.style.background = r.color;
+    bar.innerText = r.score + "%";
+    graphDiv.appendChild(bar);
+  });
 }
 
-// 🔍 CORE LOGIC
 function analyzeURL(url) {
 
   let score = 0;
@@ -245,13 +239,11 @@ function analyzeURL(url) {
 
   function addReason(t) { reasons.push("✔ " + t); }
 
-  let domain = "";
-
   try {
-    domain = new URL(url.includes("://") ? url : "http://" + url).hostname;
+    new URL(url.includes("://") ? url : "http://" + url);
   } catch {
     score += 40;
-    addReason("Invalid URL format (check input)");
+    addReason("Invalid URL format");
   }
 
   if (url.length > 100) { score += 20; addReason("Long URL"); }
@@ -267,22 +259,23 @@ function analyzeURL(url) {
 
   let color = "#2ecc71";
   let label = "Safe";
+  let dotColor = "#2ecc71";
 
   if (score >= 70) {
     color = "#e74c3c";
+    dotColor = "#e74c3c";
     label = "Phishing";
     playAlert();
   } else if (score >= 40) {
     color = "#f1c40f";
+    dotColor = "#f1c40f";
     label = "Suspicious";
   }
-
-  const dotClass = label === "Safe" ? "green" : label === "Suspicious" ? "yellow" : "red";
 
   const html = `
   <div class="result-card">
     ${url}<br>
-    <span class="risk-dot ${dotClass}"></span>
+    <span class="risk-dot" style="background:${dotColor}"></span>
     Risk: ${label} (${score}%)
     <div class="risk-bar" style="width:${score}%; background:${color};"></div>
     <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
@@ -290,16 +283,16 @@ function analyzeURL(url) {
 
   const text = `URL:${url} Risk:${score}% ${label}`;
 
-  return { html, text, score };
+  return { html, text, score, color };
 }
 
-// 📋 COPY
+// COPY
 function copyReport() {
   navigator.clipboard.writeText(reportData);
   alert("Copied!");
 }
 
-// ⬇ DOWNLOAD
+// DOWNLOAD
 function downloadReport() {
   const blob = new Blob([reportData], { type:"text/plain" });
   const a = document.createElement("a");
