@@ -1,129 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Phishing Detector Pro</title>
+<title>Phishing URL Detector</title>
 
 <style>
-body { font-family:Segoe UI; background:#dbeeff; padding:20px; transition:0.3s; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #dbeeff;
+  margin: 0;
+  padding: 20px;
+  transition: 0.3s;
+}
 
 /* THEMES */
 
-/* DARK */
-.dark { background:#121212; color:white; }
-
-/* MATRIX */
-.matrix {
-  background:black;
-  color:#00ff9f;
-  font-family:monospace;
+/* 🌙 Dark */
+.dark {
+  background: #121212;
+  color: white;
 }
 
-/* CYBERPUNK */
+/* 🟢 Terminal */
+.terminal {
+  background: black;
+  color: #00ff9f;
+  font-family: monospace;
+}
+
+/* 🟣 Cyberpunk */
 .cyber {
-  background:#0a0a12;
-  color:#fff;
-}
-.cyber .container {
-  border:1px solid #ff00ff;
-  box-shadow:0 0 20px #ff00ff, 0 0 40px #00f0ff inset;
+  background: #0f0f1a;
+  color: #fff;
 }
 
-/* TRANSFORMERS */
-.transformers {
-  background:#1a1a1a;
-  color:#ccc;
-  font-family: Impact, sans-serif;
-}
-
-/* GLASNOST */
-.glasnost {
-  background:linear-gradient(120deg,#89f7fe,#fbc2eb);
-  background-size:200% 200%;
-  animation:flow 8s infinite alternate;
-}
-@keyframes flow {
-  0%{background-position:0%}
-  100%{background-position:100%}
-}
-
-/* AUTO */
-.auto .container, .auto .result-card {
-  border:2px solid #f1c40f;
-}
-
-/* LAYOUT */
+/* 📦 Container */
 .container {
-  max-width:900px;
-  margin:auto;
-  background:white;
-  padding:20px;
-  border-radius:10px;
+  max-width: 900px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
 }
 
-/* INPUT */
+.dark .container { background:#1e1e1e; }
+.terminal .container { background:black; border:1px solid #00ff9f; }
+.cyber .container { background:#1a1a2e; }
+
+/* BUTTONS */
+button {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* TEXTAREA */
 textarea {
-  width:100%;
-  height:100px;
+  width: 95%;
+  height: 100px;
 }
 
 /* CARD */
 .result-card {
-  background:#f9f9f9;
-  padding:10px;
-  margin-top:10px;
-  border-radius:8px;
-  word-break:break-all;
+  background: #f9f9f9;
+  padding: 15px;
+  margin-top: 10px;
 }
 
-/* RISK DOT */
+.dark .result-card { background:#2a2a2a; }
+.terminal .result-card { border:1px solid #00ff9f; background:black; }
+.cyber .result-card { border:1px solid #00f0ff; }
+
+/* BAR */
+.risk-bar {
+  height: 10px;
+}
+
+/* DOT */
 .risk-dot {
-  width:12px;height:12px;border-radius:50%;
-  display:inline-block;
-}
-.green{background:#2ecc71;}
-.yellow{background:#f1c40f;}
-.red{background:#e74c3c;}
-
-/* GRAPH */
-.graph {
-  display:flex;
-  align-items:flex-end;
-  height:150px;
-  gap:10px;
-  margin-top:20px;
-}
-.bar {
-  width:40px;
-  background:#3498db;
-  text-align:center;
-  color:white;
-  font-size:10px;
+  width: 12px; height: 12px;
+  display:inline-block; border-radius:50%;
 }
 
-/* BUTTON */
-button, select {
-  padding:8px;
-  margin:5px;
-}
+.green { background:#2ecc71; }
+.yellow { background:#f1c40f; }
+.red { background:#e74c3c; }
+
 </style>
-
 </head>
 
-<body class="auto">
+<body>
 
 <div class="container">
 
-<h1>🔍 Phishing Detector</h1>
+<h1>🔍 Phishing URL Detector</h1>
 
-<select onchange="setTheme(this.value)">
-<option value="auto">Auto</option>
-<option value="dark">Dark</option>
-<option value="matrix">Matrix</option>
-<option value="cyber">Cyberpunk</option>
-<option value="transformers">Transformers</option>
-<option value="glasnost">Glasnost</option>
+<!-- 🎭 THEME SWITCHER -->
+<select id="themeSelect" onchange="setTheme(this.value)">
+  <option value="auto">Auto</option>
+  <option value="light">Modern</option>
+  <option value="dark">Dark</option>
+  <option value="terminal">Terminal</option>
+  <option value="cyber">Cyberpunk</option>
 </select>
+
+<br><br>
 
 <textarea id="url-input" placeholder="Enter URLs (one per line)"></textarea><br>
 
@@ -131,99 +114,158 @@ button, select {
 <button onclick="copyReport()">📋 Copy</button>
 <button onclick="downloadReport()">⬇ Download</button>
 
+<h2 id="alert-text"></h2>
 <div id="results"></div>
-
-<h3>📊 Risk Graph</h3>
-<div class="graph" id="graph"></div>
 
 </div>
 
 <script>
 
-// 🔊 SOUND (Transformers)
-function mechSound(){
- if(document.body.classList.contains("transformers")){
-  new Audio("https://www.soundjay.com/mechanical/keyboard-1.wav").play();
- }
+// 🔔 SOUND
+function playAlert() {
+  new Audio("https://www.soundjay.com/buttons/beep-03.wav").play();
 }
 
-// THEME
-function setTheme(t){
- if(t==="auto"){localStorage.removeItem("theme"); document.body.className="auto";}
- else{document.body.className=t; localStorage.setItem("theme",t);}
+// 🎭 APPLY THEME
+function applyTheme(theme) {
+  document.body.className = "";
+
+  if (theme === "dark") document.body.classList.add("dark");
+  if (theme === "terminal") document.body.classList.add("terminal");
+  if (theme === "cyber") document.body.classList.add("cyber");
 }
 
-// LOAD
-window.onload=function(){
- let t=localStorage.getItem("theme");
- if(t) document.body.className=t;
+// 🎯 SET THEME (USER SELECT)
+function setTheme(theme) {
+  if (theme === "auto") {
+    localStorage.removeItem("theme");
+    detectSystemTheme();
+  } else {
+    localStorage.setItem("theme", theme);
+    applyTheme(theme);
+  }
+}
+
+// 🧠 SYSTEM DETECTION
+function detectSystemTheme() {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? "dark" : "light");
+}
+
+// 💾 LOAD THEME
+window.onload = function() {
+  const saved = localStorage.getItem("theme");
+
+  if (saved) {
+    applyTheme(saved);
+    document.getElementById("themeSelect").value = saved;
+  } else {
+    detectSystemTheme();
+    document.getElementById("themeSelect").value = "auto";
+  }
 };
 
-let reportData="";
+// ⌨️ ENTER SUPPORT
+document.getElementById("url-input").addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    analyzeBatch();
+  }
+});
 
-// ANALYZE
-function analyzeBatch(){
- let urls=document.getElementById("url-input").value.split("\n");
- let res=document.getElementById("results");
- let graph=document.getElementById("graph");
+let reportData = "";
 
- res.innerHTML="";
- graph.innerHTML="";
- reportData="";
+// 🧪 ANALYZE
+function analyzeBatch() {
 
- urls.forEach(url=>{
-  if(!url.trim()) return;
-  let r=analyzeURL(url.trim());
-  res.innerHTML+=r.html;
-  graph.innerHTML+=r.bar;
-  reportData+=r.text+"\n\n";
-  mechSound();
- });
+  const urls = document.getElementById("url-input").value.split("\n");
+  const resultsDiv = document.getElementById("results");
+  const alertText = document.getElementById("alert-text");
+
+  resultsDiv.innerHTML = "";
+  reportData = "";
+
+  let highRisk = false;
+
+  urls.forEach(url => {
+    if (!url.trim()) return;
+
+    const result = analyzeURL(url.trim());
+    resultsDiv.innerHTML += result.html;
+    reportData += result.text + "\n\n";
+
+    if (result.score >= 70) highRisk = true;
+  });
+
+  alertText.innerText = highRisk ? "🚨 High-risk URLs detected!" : "✅ No major threats";
 }
 
-// LOGIC
-function analyzeURL(url){
+// 🔍 CORE LOGIC
+function analyzeURL(url) {
 
- let score=0,reasons=[];
- function add(r){reasons.push("✔ "+r);}
+  let score = 0;
+  let reasons = [];
 
- if(url.length>100){score+=20;add("Long URL");}
- if(url.includes("@")){score+=15;add("@ symbol");}
- if(/login|verify|bank/i.test(url)){score+=10;add("Keyword");}
+  function addReason(t) { reasons.push("✔ " + t); }
 
- if(score===0)add("Safe URL");
+  let domain = "";
 
- let label="Safe",color="green";
- if(score>=70){label="Phishing";color="red";}
- else if(score>=40){label="Suspicious";color="yellow";}
+  try {
+    domain = new URL(url.includes("://") ? url : "http://" + url).hostname;
+  } catch {
+    score += 40;
+    addReason("Invalid URL");
+  }
 
- let html=`
- <div class="result-card">
- <b>${url}</b><br>
- ${label} <span class="risk-dot ${color}"></span>
- <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
- </div>`;
+  if (url.length > 100) { score += 20; addReason("Long URL"); }
+  if ((url.match(/\./g) || []).length > 5) { score += 10; addReason("Too many dots"); }
+  if (url.includes("@")) { score += 15; addReason("@ symbol"); }
 
- let bar=`<div class="bar" style="height:${score}%; background:${color}">${score}%</div>`;
+  if (/verify|login|secure|account/i.test(url)) {
+    score += 10;
+    addReason("Suspicious keyword");
+  }
 
- let text=`${url} → ${label} (${score}%)`;
+  if (score === 0) addReason("Safe URL");
 
- return {html,bar,text};
+  let color = "#2ecc71";
+  let label = "Safe";
+
+  if (score >= 70) {
+    color = "#e74c3c";
+    label = "Phishing";
+    playAlert();
+  } else if (score >= 40) {
+    color = "#f1c40f";
+    label = "Suspicious";
+  }
+
+  const html = `
+  <div class="result-card">
+    ${url}<br>
+    Risk: ${label} (${score}%)
+    <div class="risk-bar" style="width:${score}%; background:${color};"></div>
+    <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
+  </div>`;
+
+  const text = `URL:${url} Risk:${score}% ${label}`;
+
+  return { html, text, score };
 }
 
-// COPY
-function copyReport(){
- navigator.clipboard.writeText(reportData);
- alert("Copied!");
+// 📋 COPY
+function copyReport() {
+  navigator.clipboard.writeText(reportData);
+  alert("Copied!");
 }
 
-// DOWNLOAD
-function downloadReport(){
- let blob=new Blob([reportData],{type:"text/plain"});
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="report.txt";
- a.click();
+// ⬇ DOWNLOAD
+function downloadReport() {
+  const blob = new Blob([reportData], { type:"text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "report.txt";
+  a.click();
 }
 
 </script>
