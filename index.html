@@ -6,16 +6,32 @@
 
 <style>
 body {
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   background: #dbeeff;
   margin: 0;
   padding: 20px;
+  transition: 0.3s;
 }
 
-/* 🌙 Dark Mode */
+/* THEMES */
+
+/* 🌙 Dark */
 .dark {
   background: #121212;
   color: white;
+}
+
+/* 🟢 Terminal */
+.terminal {
+  background: black;
+  color: #00ff9f;
+  font-family: monospace;
+}
+
+/* 🟣 Cyberpunk */
+.cyber {
+  background: #0f0f1a;
+  color: #fff;
 }
 
 /* 📦 Container */
@@ -25,101 +41,53 @@ body {
   background: white;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-.dark .container {
-  background: #1e1e1e;
-}
+.dark .container { background:#1e1e1e; }
+.terminal .container { background:black; border:1px solid #00ff9f; }
+.cyber .container { background:#1a1a2e; }
 
-/* 🔝 Header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* 🔘 Buttons */
+/* BUTTONS */
 button {
-  padding: 10px 15px;
+  padding: 10px;
   margin: 5px;
-  cursor: pointer;
-  background: #3498db;
-  color: white;
-  border: none;
   border-radius: 8px;
-  transition: 0.2s;
+  border: none;
+  cursor: pointer;
 }
 
-button:hover {
-  background: #2980b9;
-  transform: scale(1.05);
-}
-
-/* 🌗 Toggle */
-.toggle-btn {
-  font-size: 18px;
-  background: #555;
-}
-
-/* 📝 Input */
+/* TEXTAREA */
 textarea {
   width: 95%;
   height: 100px;
-  padding: 10px;
-  margin-top: 10px;
 }
 
-/* 🚦 Risk Dot */
-.risk-dot {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-left: 8px;
-}
-
-.green { background: #2ecc71; }
-.yellow { background: #f1c40f; }
-.red { background: #e74c3c; }
-
-/* 📊 Risk Bar */
-.risk-bar-container {
-  width: 100%;
-  background: #ffffff;
-  height: 10px;
-  border-radius: 6px;
-  overflow: hidden;
-  margin-top: 10px;
-  border: 1px solid #ccc;
-}
-
-.risk-bar {
-  height: 100%;
-  width: 0%;
-  transition: width 0.4s ease;
-}
-
-/* 📄 Result Card */
+/* CARD */
 .result-card {
   background: #f9f9f9;
   padding: 15px;
-  border-radius: 10px;
-  margin-top: 15px;
-  border-left: 5px solid #3498db;
+  margin-top: 10px;
 }
 
-.dark .result-card {
-  background: #2a2a2a;
+.dark .result-card { background:#2a2a2a; }
+.terminal .result-card { border:1px solid #00ff9f; background:black; }
+.cyber .result-card { border:1px solid #00f0ff; }
+
+/* BAR */
+.risk-bar {
+  height: 10px;
 }
 
-/* ⚠ Alert */
-#alert-text {
-  font-weight: bold;
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 8px;
+/* DOT */
+.risk-dot {
+  width: 12px; height: 12px;
+  display:inline-block; border-radius:50%;
 }
+
+.green { background:#2ecc71; }
+.yellow { background:#f1c40f; }
+.red { background:#e74c3c; }
+
 </style>
 </head>
 
@@ -127,58 +95,77 @@ textarea {
 
 <div class="container">
 
-  <div class="header">
-    <h1>🔍 Phishing URL Detector</h1>
-    <button class="toggle-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
-  </div>
+<h1>🔍 Phishing URL Detector</h1>
 
-  <textarea id="url-input" placeholder="Enter URLs (one per line)"></textarea><br>
+<!-- 🎭 THEME SWITCHER -->
+<select id="themeSelect" onchange="setTheme(this.value)">
+  <option value="auto">Auto</option>
+  <option value="light">Modern</option>
+  <option value="dark">Dark</option>
+  <option value="terminal">Terminal</option>
+  <option value="cyber">Cyberpunk</option>
+</select>
 
-  <button onclick="analyzeBatch()">Analyze</button>
-  <button onclick="copyReport()">📋 Copy</button>
-  <button onclick="downloadReport()">⬇ Download</button>
+<br><br>
 
-  <h2 id="alert-text"></h2>
-  <div id="results"></div>
+<textarea id="url-input" placeholder="Enter URLs (one per line)"></textarea><br>
 
-  <p style="text-align:center; margin-top:20px; font-size:12px;">
-    Built for security awareness ⚡
-  </p>
+<button onclick="analyzeBatch()">Analyze</button>
+<button onclick="copyReport()">📋 Copy</button>
+<button onclick="downloadReport()">⬇ Download</button>
+
+<h2 id="alert-text"></h2>
+<div id="results"></div>
 
 </div>
 
 <script>
 
-// 🔔 Sound
+// 🔔 SOUND
 function playAlert() {
-  const audio = new Audio("https://www.soundjay.com/buttons/beep-03.wav");
-  audio.play();
+  new Audio("https://www.soundjay.com/buttons/beep-03.wav").play();
 }
 
-// 🌙 Theme Toggle (UPDATED with memory)
-function toggleTheme() {
-  document.body.classList.toggle("dark");
+// 🎭 APPLY THEME
+function applyTheme(theme) {
+  document.body.className = "";
 
-  const isDark = document.body.classList.contains("dark");
-  const btn = document.getElementById("themeBtn");
-
-  btn.innerText = isDark ? "☀" : "🌙";
-
-  // 💾 SAVE THEME
-  localStorage.setItem("theme", isDark ? "dark" : "light");
+  if (theme === "dark") document.body.classList.add("dark");
+  if (theme === "terminal") document.body.classList.add("terminal");
+  if (theme === "cyber") document.body.classList.add("cyber");
 }
 
-// 💾 LOAD SAVED THEME ON PAGE LOAD
+// 🎯 SET THEME (USER SELECT)
+function setTheme(theme) {
+  if (theme === "auto") {
+    localStorage.removeItem("theme");
+    detectSystemTheme();
+  } else {
+    localStorage.setItem("theme", theme);
+    applyTheme(theme);
+  }
+}
+
+// 🧠 SYSTEM DETECTION
+function detectSystemTheme() {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? "dark" : "light");
+}
+
+// 💾 LOAD THEME
 window.onload = function() {
-  const savedTheme = localStorage.getItem("theme");
+  const saved = localStorage.getItem("theme");
 
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark");
-    document.getElementById("themeBtn").innerText = "☀";
+  if (saved) {
+    applyTheme(saved);
+    document.getElementById("themeSelect").value = saved;
+  } else {
+    detectSystemTheme();
+    document.getElementById("themeSelect").value = "auto";
   }
 };
 
-// ⌨️ Enter Support
+// ⌨️ ENTER SUPPORT
 document.getElementById("url-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -188,143 +175,96 @@ document.getElementById("url-input").addEventListener("keydown", function(e) {
 
 let reportData = "";
 
-// 🧪 Analyze Batch
+// 🧪 ANALYZE
 function analyzeBatch() {
 
-  const input = document.getElementById("url-input").value.trim();
-  const urls = input.split("\n").filter(u => u.trim() !== "");
+  const urls = document.getElementById("url-input").value.split("\n");
   const resultsDiv = document.getElementById("results");
   const alertText = document.getElementById("alert-text");
 
   resultsDiv.innerHTML = "";
   reportData = "";
-  alertText.innerText = "";
 
-  if (urls.length === 0) {
-    alertText.innerText = "⚠️ Please enter at least one URL";
-    return;
-  }
-
-  let highRiskFound = false;
+  let highRisk = false;
 
   urls.forEach(url => {
-    const result = analyzeURL(url);
+    if (!url.trim()) return;
+
+    const result = analyzeURL(url.trim());
     resultsDiv.innerHTML += result.html;
     reportData += result.text + "\n\n";
 
-    if (result.score >= 70) highRiskFound = true;
+    if (result.score >= 70) highRisk = true;
   });
 
-  if (highRiskFound) {
-    alertText.innerText = "🚨 High-risk URLs detected!";
-    alertText.style.background = "#ffdddd";
-  } else {
-    alertText.innerText = "✅ No major threats found.";
-    alertText.style.background = "#ddffdd";
-  }
+  alertText.innerText = highRisk ? "🚨 High-risk URLs detected!" : "✅ No major threats";
 }
 
-// 🔍 Analyze URL (UNCHANGED)
+// 🔍 CORE LOGIC
 function analyzeURL(url) {
 
   let score = 0;
   let reasons = [];
 
-  function addReason(text) {
-    reasons.push("✔ " + text);
-  }
+  function addReason(t) { reasons.push("✔ " + t); }
 
   let domain = "";
 
   try {
-    const parsed = new URL(url.includes("://") ? url : "http://" + url);
-    domain = parsed.hostname;
+    domain = new URL(url.includes("://") ? url : "http://" + url).hostname;
   } catch {
     score += 40;
-    addReason("Invalid URL format");
+    addReason("Invalid URL");
   }
 
-  if (url.length > 100) { score += 20; addReason("URL too long"); }
+  if (url.length > 100) { score += 20; addReason("Long URL"); }
   if ((url.match(/\./g) || []).length > 5) { score += 10; addReason("Too many dots"); }
-  if ((url.match(/&/g) || []).length > 5) { score += 15; addReason("Too many parameters"); }
-  if (/redirect|click|track|adurl/i.test(url)) { score += 20; addReason("Redirect pattern"); }
-  if (url.includes("@")) { score += 15; addReason("Contains @"); }
+  if (url.includes("@")) { score += 15; addReason("@ symbol"); }
 
-  if (domain && domain.length > 30) {
-    score += 15;
-    addReason("Long domain");
+  if (/verify|login|secure|account/i.test(url)) {
+    score += 10;
+    addReason("Suspicious keyword");
   }
 
-  if (domain && /^[a-z0-9]{10,}$/i.test(domain.replace(/\./g, ""))) {
-    score += 15;
-    addReason("Random-looking domain");
-  }
+  if (score === 0) addReason("Safe URL");
 
-  const keywords = ["verify","login","secure","account","update","bank","password","signin"];
-  keywords.forEach(k => {
-    if (url.toLowerCase().includes(k)) {
-      score += 10;
-      addReason(`Keyword: ${k}`);
-    }
-  });
-
-  if (score > 100) score = 100;
-
-  let colorClass = "green";
+  let color = "#2ecc71";
   let label = "Safe";
-  let barColor = "#2ecc71";
 
   if (score >= 70) {
-    colorClass = "red";
+    color = "#e74c3c";
     label = "Phishing";
-    barColor = "#e74c3c";
     playAlert();
   } else if (score >= 40) {
-    colorClass = "yellow";
+    color = "#f1c40f";
     label = "Suspicious";
-    barColor = "#f1c40f";
   }
-
-  if (reasons.length === 0) reasons.push("✔ No major issues");
 
   const html = `
   <div class="result-card">
-    <b>🔗 URL:</b> ${url}<br><br>
-
-    ⭐ <b>Confidence Score:</b> ${score}%<br><br>
-
-    ⭐ <b>Risk:</b> ${label}
-    <span class="risk-dot ${colorClass}"></span>
-
-    <div class="risk-bar-container">
-      <div class="risk-bar" style="width:${score}%; background:${barColor};"></div>
-    </div>
-
-    <br>
-    <b>Explanation:</b>
-    <ul>${reasons.map(r => `<li>${r}</li>`).join("")}</ul>
+    ${url}<br>
+    Risk: ${label} (${score}%)
+    <div class="risk-bar" style="width:${score}%; background:${color};"></div>
+    <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
   </div>`;
 
-  const text = `URL: ${url}\nScore: ${score}%\nRisk: ${label}\n${reasons.join("\n")}`;
+  const text = `URL:${url} Risk:${score}% ${label}`;
 
   return { html, text, score };
 }
 
-// 📋 Copy
+// 📋 COPY
 function copyReport() {
-  if (!reportData) return alert("Nothing to copy!");
   navigator.clipboard.writeText(reportData);
   alert("Copied!");
 }
 
-// ⬇ Download
+// ⬇ DOWNLOAD
 function downloadReport() {
-  if (!reportData) return alert("Nothing to download!");
-
-  const blob = new Blob([reportData], { type: "text/plain" });
+  const blob = new Blob([reportData], { type:"text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "phishing_report.txt";
+  a.download = "report.txt";
   a.click();
 }
 
