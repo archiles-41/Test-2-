@@ -155,12 +155,28 @@ function playAlert() {
   audio.play();
 }
 
-// 🌙 Theme Toggle
+// 🌙 Theme Toggle (UPDATED with memory)
 function toggleTheme() {
   document.body.classList.toggle("dark");
+
+  const isDark = document.body.classList.contains("dark");
   const btn = document.getElementById("themeBtn");
-  btn.innerText = document.body.classList.contains("dark") ? "☀" : "🌙";
+
+  btn.innerText = isDark ? "☀" : "🌙";
+
+  // 💾 SAVE THEME
+  localStorage.setItem("theme", isDark ? "dark" : "light");
 }
+
+// 💾 LOAD SAVED THEME ON PAGE LOAD
+window.onload = function() {
+  const savedTheme = localStorage.getItem("theme");
+
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark");
+    document.getElementById("themeBtn").innerText = "☀";
+  }
+};
 
 // ⌨️ Enter Support
 document.getElementById("url-input").addEventListener("keydown", function(e) {
@@ -208,7 +224,7 @@ function analyzeBatch() {
   }
 }
 
-// 🔍 Analyze URL
+// 🔍 Analyze URL (UNCHANGED)
 function analyzeURL(url) {
 
   let score = 0;
@@ -233,7 +249,11 @@ function analyzeURL(url) {
   if ((url.match(/&/g) || []).length > 5) { score += 15; addReason("Too many parameters"); }
   if (/redirect|click|track|adurl/i.test(url)) { score += 20; addReason("Redirect pattern"); }
   if (url.includes("@")) { score += 15; addReason("Contains @"); }
-  if (domain && domain.length > 30) { score += 15; addReason("Long domain"); }
+
+  if (domain && domain.length > 30) {
+    score += 15;
+    addReason("Long domain");
+  }
 
   if (domain && /^[a-z0-9]{10,}$/i.test(domain.replace(/\./g, ""))) {
     score += 15;
