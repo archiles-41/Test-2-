@@ -15,6 +15,12 @@ body {
 
 /* THEMES */
 
+/* ☀ Light */
+.light {
+  background: #dbeeff;
+  color: black;
+}
+
 /* 🌙 Dark */
 .dark {
   background: #121212;
@@ -31,7 +37,17 @@ body {
 /* 🟣 Cyberpunk */
 .cyber {
   background: #0f0f1a;
-  color: #fff;
+  color: #00f0ff;
+}
+
+.cyber h1 {
+  text-shadow: 0 0 8px #00f0ff;
+}
+
+.cyber button, .cyber textarea {
+  background: black;
+  color: #00f0ff;
+  border: 1px solid #00f0ff;
 }
 
 /* 📦 Container */
@@ -62,11 +78,19 @@ textarea {
   height: 100px;
 }
 
+.terminal textarea {
+  background: black;
+  color: #00ff9f;
+  border: 1px solid #00ff9f;
+}
+
 /* CARD */
 .result-card {
   background: #f9f9f9;
   padding: 15px;
   margin-top: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 .dark .result-card { background:#2a2a2a; }
@@ -76,12 +100,16 @@ textarea {
 /* BAR */
 .risk-bar {
   height: 10px;
+  transition: width 0.5s ease;
 }
 
 /* DOT */
 .risk-dot {
-  width: 12px; height: 12px;
-  display:inline-block; border-radius:50%;
+  width: 12px;
+  height: 12px;
+  display:inline-block;
+  border-radius:50%;
+  margin-right:5px;
 }
 
 .green { background:#2ecc71; }
@@ -95,18 +123,19 @@ textarea {
 
 <div class="container">
 
-<h1>🔍 Phishing URL Detector</h1>
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <h1>🔍 Phishing URL Detector</h1>
 
-<!-- 🎭 THEME SWITCHER -->
-<select id="themeSelect" onchange="setTheme(this.value)">
-  <option value="auto">Auto</option>
-  <option value="light">Modern</option>
-  <option value="dark">Dark</option>
-  <option value="terminal">Terminal</option>
-  <option value="cyber">Cyberpunk</option>
-</select>
+  <select id="themeSelect" onchange="setTheme(this.value)">
+    <option value="auto">Auto</option>
+    <option value="light">Modern</option>
+    <option value="dark">Dark</option>
+    <option value="terminal">Terminal</option>
+    <option value="cyber">Cyberpunk</option>
+  </select>
+</div>
 
-<br><br>
+<br>
 
 <textarea id="url-input" placeholder="Enter URLs (one per line)"></textarea><br>
 
@@ -133,9 +162,10 @@ function applyTheme(theme) {
   if (theme === "dark") document.body.classList.add("dark");
   if (theme === "terminal") document.body.classList.add("terminal");
   if (theme === "cyber") document.body.classList.add("cyber");
+  if (theme === "light") document.body.classList.add("light");
 }
 
-// 🎯 SET THEME (USER SELECT)
+// 🎯 SET THEME
 function setTheme(theme) {
   if (theme === "auto") {
     localStorage.removeItem("theme");
@@ -151,6 +181,13 @@ function detectSystemTheme() {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(prefersDark ? "dark" : "light");
 }
+
+// 🔄 LIVE SYSTEM CHANGE
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  if (!localStorage.getItem("theme")) {
+    applyTheme(e.matches ? "dark" : "light");
+  }
+});
 
 // 💾 LOAD THEME
 window.onload = function() {
@@ -214,7 +251,7 @@ function analyzeURL(url) {
     domain = new URL(url.includes("://") ? url : "http://" + url).hostname;
   } catch {
     score += 40;
-    addReason("Invalid URL");
+    addReason("Invalid URL format (check input)");
   }
 
   if (url.length > 100) { score += 20; addReason("Long URL"); }
@@ -240,9 +277,12 @@ function analyzeURL(url) {
     label = "Suspicious";
   }
 
+  const dotClass = label === "Safe" ? "green" : label === "Suspicious" ? "yellow" : "red";
+
   const html = `
   <div class="result-card">
     ${url}<br>
+    <span class="risk-dot ${dotClass}"></span>
     Risk: ${label} (${score}%)
     <div class="risk-bar" style="width:${score}%; background:${color};"></div>
     <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
