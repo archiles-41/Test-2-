@@ -18,10 +18,7 @@
 }
 
 /* 🤖 AUTO */
-.auto {
-  background:#eaf6ff;
-  color:black;
-}
+.auto { background:#eaf6ff; color:black; }
 
 /* 🌙 DARK */
 .dark { background:#121212; color:#eee; }
@@ -40,7 +37,7 @@
   100% { box-shadow: 0 0 30px #00f0ff inset; }
 }
 
-/* 📦 CONTAINER (NEUTRAL) */
+/* 📦 CONTAINER */
 .container {
   max-width:900px;
   margin:auto;
@@ -48,40 +45,22 @@
   border-radius:12px;
 }
 
-/* 🎨 THEME CONTAINERS */
-.light .container {
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(10px);
-}
-
-.dark .container {
-  background:#1e1e1e;
-}
-
-.matrix .container {
-  background:#000;
-  border:1px solid #00ff9f;
-}
-
-.cyber .container {
-  background:#120024;
-  border:1px solid #00f0ff;
-}
-
-.auto .container {
-  background:white;
-}
+/* THEME CONTAINERS */
+.light .container { background:rgba(255,255,255,0.9); backdrop-filter:blur(10px); }
+.dark .container { background:#1e1e1e; }
+.matrix .container { background:#000; border:1px solid #00ff9f; }
+.cyber .container { background:#120024; border:1px solid #00f0ff; }
+.auto .container { background:white; }
 
 /* RESULT CARD */
 .result-card {
   padding:15px;
   margin-top:10px;
   border-radius:10px;
-  word-break: break-all;
+  word-break:break-all;
   overflow-wrap:anywhere;
   transition:0.3s;
 }
-
 .result-card:hover {
   transform:scale(1.02);
   box-shadow:0 0 15px cyan,0 0 25px magenta;
@@ -100,20 +79,25 @@
 
 /* DASHBOARD */
 .dashboard {
-  margin-top:40px;
-  padding:20px;
-  border-radius:12px;
+  margin-top:60px;
+  padding:25px;
+  border-top:2px solid rgba(255,255,255,0.2);
+}
+.cyber .dashboard {
+  box-shadow:0 0 15px #00f0ff;
 }
 
 /* GRAPH */
 .graph-bar {
   height:22px;
-  margin:6px 0;
+  margin:4px 0;
   color:white;
-  font-size:12px;
-  padding-left:6px;
   border-radius:5px;
   width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
   transition:width 1s;
 }
 
@@ -172,6 +156,7 @@
 
 <div class="dashboard">
 <h2>📊 Risk Dashboard</h2>
+<h3 id="summary"></h3>
 <div id="graph"></div>
 </div>
 
@@ -201,7 +186,6 @@ function playSound(){
 function setTheme(theme){
  localStorage.setItem("theme",theme);
  document.body.className=theme;
-
  document.getElementById("matrixCanvas").style.display =
   (theme==="matrix")?"block":"none";
 }
@@ -212,10 +196,9 @@ window.onload=()=>{
  setTheme(saved);
 };
 
-/* 🟢 MATRIX RAIN */
+/* MATRIX RAIN */
 const canvas=document.getElementById("matrixCanvas");
 const ctx=canvas.getContext("2d");
-
 const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 let drops=[];
 
@@ -230,7 +213,6 @@ function resizeCanvas(){
   drops[i] = Math.floor(Math.random() * canvas.height / 20);
  }
 }
-
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
@@ -316,15 +298,27 @@ function renderGraph(){
  const graph=document.getElementById("graph");
  graph.innerHTML="";
 
+ const high = graphData.filter(x=>x.score>=70).length;
+ const mid = graphData.filter(x=>x.score>=40 && x.score<70).length;
+ const low = graphData.length - high - mid;
+
+ document.getElementById("summary").innerText =
+ `🚨 High: ${high} | ⚠️ Suspicious: ${mid} | ✅ Safe: ${low}`;
+
  graphData.forEach((r,i)=>{
-  const bar=document.createElement("div");
-  bar.className="graph-bar";
 
   const shortURL = r.url.length>25 ? r.url.slice(0,25)+"..." : r.url;
 
-  bar.style.background=r.color;
-  bar.innerText=`${i+1}. ${shortURL} → ${r.score}% (${r.label})`;
+  const label = document.createElement("div");
+  label.style.marginTop="10px";
+  label.innerText = `${i+1}. ${shortURL} (${r.label})`;
 
+  const bar = document.createElement("div");
+  bar.className="graph-bar";
+  bar.style.background=r.color;
+  bar.innerText=`${r.score}%`;
+
+  graph.appendChild(label);
   graph.appendChild(bar);
 
   setTimeout(()=>{ bar.style.width=r.score+"%"; },i*150);
