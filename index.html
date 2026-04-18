@@ -243,13 +243,13 @@ function analyzeURL(url){
  try{ new URL(url.includes("://")?url:"http://"+url); }
  catch{ score+=40; reasons.push("Invalid URL"); }
 
- if(url.length>100){score+=20;reasons.push("Long URL");}
- if((url.match(/\./g)||[]).length>5){score+=10;reasons.push("Too many dots");}
- if(url.includes("@")){score+=15;reasons.push("@ symbol");}
+ if(url.length>100){score+=30;reasons.push("Long URL");}
+ if((url.match(/\./g)||[]).length>5){score+=15;reasons.push("Too many dots");}
+ if(url.includes("@")){score+=20;reasons.push("@ symbol");}
  if(/login|verify|secure|account/i.test(url)){
-  score+=10; reasons.push("Keyword");
+  score+=20; reasons.push("Keyword");
  }
- if(!url.startsWith("https")){score+=10;reasons.push("No HTTPS");}
+ if(!url.startsWith("https")){score+=20;reasons.push("No HTTPS");}
  if(!url.includes(".")){score+=20;reasons.push("Invalid domain");}
 
  if(score===0) reasons.push("Safe URL");
