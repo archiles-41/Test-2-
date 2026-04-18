@@ -2,9 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Phishing Detector PRO</title>
+<title>Phishing Detector PRO MAX</title>
 
 <style>
+
+/* ================= THEMES ================= */
+
+body {
+  margin:0;
+  font-family:Arial;
+  overflow-x:hidden;
+  transition:0.4s;
+}
+
+.container {
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
 
 /* 🌈 MODERN */
 .light {
@@ -17,10 +32,16 @@
   100%{background-position:100%}
 }
 
-/* THEMES */
-.auto { background:#eaf6ff; color:black; }
+/* 🌙 DARK */
 .dark { background:#121212; color:#eee; }
+
+/* 🤖 AUTO */
+.auto { background:#eaf6ff; color:black; }
+
+/* 👾 MATRIX */
 .matrix { background:black; color:#00ff9f; font-family:monospace; }
+
+/* ⚡ CYBER */
 .cyber {
   background:#0a0015;
   color:#ff2bd6;
@@ -31,75 +52,57 @@
   100% { box-shadow: 0 0 30px #00f0ff inset; }
 }
 
-/* CONTAINER */
-.container {
-  max-width:900px;
-  margin:auto;
-  padding:20px;
-  border-radius:12px;
+/* ================= UI ================= */
+
+textarea {
+  width:100%;
+  height:100px;
+  resize:vertical;
 }
 
-/* BUTTON GLOW */
 button {
   padding:10px 15px;
   margin:5px;
-  border:none;
-  border-radius:6px;
   cursor:pointer;
   transition:0.3s;
+  border:none;
+  border-radius:6px;
 }
+
 button:hover {
   transform:scale(1.05);
   box-shadow:0 0 15px cyan,0 0 25px magenta;
 }
 
-/* RESULT */
 .result-card {
-  padding:15px;
   margin-top:10px;
+  padding:12px;
   border-radius:10px;
+  word-break:break-word;
+  overflow-wrap:anywhere;
   transition:0.3s;
 }
+
 .result-card:hover {
   transform:scale(1.02);
-  box-shadow:0 0 15px cyan,0 0 25px magenta;
+  box-shadow:0 0 12px cyan;
 }
 
 .green{background:#2ecc71;}
 .yellow{background:#f1c40f;}
 .red{background:#e74c3c;}
 
-.risk-bar {
-  height:10px;
-  border-radius:5px;
-}
-
-/* GRAPH */
 .graph-bar {
   height:22px;
-  margin:4px 0;
+  margin:5px 0;
   color:white;
-  border-radius:5px;
-  width:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  transition:width 1s;
+  border-radius:5px;
+  width:0;
+  transition:1s;
 }
-
-/* TOAST */
-#toast {
-  position:fixed;
-  bottom:20px;
-  right:20px;
-  background:black;
-  color:white;
-  padding:10px;
-  border-radius:6px;
-  opacity:0;
-  transition:0.5s;
-}
-#toast.show { opacity:1; }
 
 /* MATRIX CANVAS */
 #matrixCanvas {
@@ -119,7 +122,7 @@ button:hover {
 
 <div class="container">
 
-<h1>🔍 Phishing Detector PRO</h1>
+<h1>🔍 Phishing Detector PRO MAX</h1>
 
 <select id="themeSelect">
 <option value="auto">Auto</option>
@@ -129,90 +132,112 @@ button:hover {
 <option value="cyber">Cyberpunk</option>
 </select>
 
-<textarea id="url-input" placeholder="Enter URLs" style="width:100%;height:100px;"></textarea><br>
+<br><br>
 
-<button onclick="analyzeBatch()">Analyze</button>
-<button onclick="copyReport()">Copy</button>
-<button onclick="downloadReport()">Download</button>
+<textarea id="url-input" placeholder="Enter URLs"></textarea>
 
-<h2 id="alert-text"></h2>
+<br>
+
+<button onclick="playClick(); analyzeBatch()">Analyze</button>
+<button onclick="playClick(); copyReport()">Copy</button>
+<button onclick="playClick(); downloadReport()">Download</button>
+
+<!-- 🔊 SOUND PANEL -->
+<h3>🔊 Sound Controls</h3>
+
+Master:
+<input type="range" min="0" max="1" step="0.1" value="0.8" oninput="setMaster(this.value)"><br>
+
+Typing:
+<input type="range" min="0" max="1" step="0.1" value="0.6" oninput="setType(this.value)"><br>
+
+Click:
+<input type="range" min="0" max="1" step="0.1" value="0.8" oninput="setClick(this.value)"><br>
+
+Theme:
+<input type="range" min="0" max="1" step="0.1" value="0.8" oninput="setThemeVol(this.value)">
+
 <div id="results"></div>
 
-<h2>📊 Risk Dashboard</h2>
+<h2>📊 Dashboard</h2>
 <h3 id="summary"></h3>
 <div id="graph"></div>
 
 </div>
 
-<div id="toast">Copied!</div>
-
 <script>
 
-/* 🔊 THEME SOUND SYSTEM */
-const sounds = {
- light:"https://www.soundjay.com/buttons/beep-01a.mp3",
- dark:"https://www.soundjay.com/buttons/beep-02.mp3",
- matrix:"https://www.soundjay.com/misc/sci-fi-sweep.wav",
- cyber:"https://www.soundjay.com/electronic/sci-fi-bleep.wav",
- auto:"https://www.soundjay.com/buttons/button-3.mp3"
+/* ================= SOUND ENGINE ================= */
+
+const SOUND = {
+ click:["sounds/click.mp3"],
+ type:["sounds/key1.mp3","sounds/key2.mp3"],
+ space:"sounds/space.mp3",
+ enter:"sounds/enter.mp3",
+ backspace:"sounds/backspace.mp3",
+ theme:{
+  light:"sounds/light.mp3",
+  dark:"sounds/dark.mp3",
+  matrix:"sounds/matrix.mp3",
+  cyber:"sounds/cyber.mp3",
+  auto:"sounds/light.mp3"
+ }
 };
 
-const typeSound = new Audio("https://www.soundjay.com/mechanical/keyboard-2.mp3");
-typeSound.volume = 0.2;
+let master=0.8,typeVol=0.6,clickVol=0.8,themeVol=0.8;
 
-function playThemeSound(){
- const theme=document.body.className;
- const audio = new Audio(sounds[theme]);
- audio.volume = 0.5;
- audio.currentTime = 0;
- audio.play().catch(()=>{});
+function play(src,vol){
+ const a=new Audio(src);
+ a.volume=vol*master;
+ a.play().catch(()=>{});
 }
 
-function playType(){
- typeSound.currentTime=0;
- typeSound.play().catch(()=>{});
+function rand(arr){
+ return arr[Math.floor(Math.random()*arr.length)];
 }
 
-document.getElementById("url-input").addEventListener("input", playType);
+function playClick(){ play(rand(SOUND.click),clickVol); }
 
-/* 🛡 ESCAPE */
-function escapeHTML(str){
-  return str.replace(/[&<>"']/g, m => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[m]));
+function playTheme(){
+ const t=document.body.className||"auto";
+ play(SOUND.theme[t],themeVol);
 }
 
-/* MATRIX EFFECT */
+/* 🎹 SMART KEYBOARD */
+let last=0;
+
+document.getElementById("url-input").addEventListener("keydown",e=>{
+ const now=Date.now();
+ if(now-last<40) return;
+ last=now;
+
+ if(e.key===" ") play(SOUND.space,typeVol);
+ else if(e.key==="Enter") play(SOUND.enter,typeVol);
+ else if(e.key==="Backspace") play(SOUND.backspace,typeVol);
+ else play(rand(SOUND.type),typeVol);
+});
+
+/* ================= MATRIX ================= */
+
 const canvas=document.getElementById("matrixCanvas");
 const ctx=canvas.getContext("2d");
 const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 let drops=[],matrixInterval;
 
-function resizeCanvas(){
- canvas.width=window.innerWidth;
- canvas.height=window.innerHeight;
- const cols=Math.floor(canvas.width/20);
- drops=Array(cols).fill(1);
+function resize(){
+ canvas.width=innerWidth;
+ canvas.height=innerHeight;
+ drops=Array(Math.floor(canvas.width/20)).fill(1);
 }
-window.addEventListener("resize",resizeCanvas);
-resizeCanvas();
-
-function startMatrix(){
- canvas.style.display="block";
- matrixInterval=setInterval(drawMatrix,50);
-}
-function stopMatrix(){
- canvas.style.display="none";
- clearInterval(matrixInterval);
-}
+resize();
+window.addEventListener("resize",resize);
 
 function drawMatrix(){
+ if(document.body.className!=="matrix") return;
+
  ctx.fillStyle="rgba(0,0,0,0.05)";
  ctx.fillRect(0,0,canvas.width,canvas.height);
+
  ctx.fillStyle="#0f0";
  ctx.font="15px monospace";
 
@@ -223,48 +248,56 @@ function drawMatrix(){
   drops[i]++;
  });
 }
+setInterval(drawMatrix,50);
 
-/* 🎭 THEME */
+/* ================= THEME ================= */
+
 document.getElementById("themeSelect").onchange=function(){
  document.body.className=this.value;
- if(this.value==="matrix") startMatrix();
- else stopMatrix();
+ if(this.value==="matrix"){
+  canvas.style.display="block";
+ } else {
+  canvas.style.display="none";
+ }
 };
 
-/* 🔍 ANALYSIS */
+/* ================= SECURITY ================= */
+
+function escapeHTML(s){
+ return s.replace(/[&<>"']/g,m=>({
+ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+ }[m]));
+}
+
+/* ================= ANALYSIS ================= */
+
 let reportData="",graphData=[];
 
 function analyzeURL(url){
  let score=0,reasons=[];
+
  url=url.trim();
 
- if (!/^https?:\/\//i.test(url)){
-  score+=20; reasons.push("Non-HTTP protocol");
+ if(!/^https?:\/\//i.test(url)){
+  score+=20; reasons.push("No HTTP/HTTPS");
  }
 
- let parsed;
+ let u;
  try{
-  parsed=new URL(url.includes("://")?url:"http://"+url);
+  u=new URL(url.includes("://")?url:"http://"+url);
  }catch{
   score+=40; reasons.push("Invalid URL");
  }
 
- if(parsed){
-  const host=parsed.hostname;
-  if(!/\.[a-z]{2,}$/i.test(host)){
-    score+=20; reasons.push("Invalid domain");
-  }
-  if(host.includes("xn--")){
-    score+=30; reasons.push("Punycode detected");
-  }
+ if(u){
+  const host=u.hostname;
+  if(host.includes("xn--")){score+=30;reasons.push("Punycode");}
+  if(!/\.[a-z]{2,}$/i.test(host)){score+=20;reasons.push("Bad domain");}
  }
 
- if(url.length>100){score+=20;reasons.push("Long URL");}
- if((url.match(/\./g)||[]).length>5){score+=15;reasons.push("Too many dots");}
+ if(url.length>100){score+=15;reasons.push("Long URL");}
  if(url.includes("@")){score+=20;reasons.push("@ symbol");}
- if(/login|verify|secure|account/i.test(url)){
-  score+=20; reasons.push("Sensitive keyword");
- }
+ if(/login|verify|secure|account/i.test(url)){score+=20;reasons.push("Sensitive word");}
 
  score=Math.min(score,100);
 
@@ -272,37 +305,37 @@ function analyzeURL(url){
  if(score>=70){label="High Risk";color="red";}
  else if(score>=40){label="Suspicious";color="yellow";}
 
- if(score===0) reasons.push("No issues detected");
-
  const safe=escapeHTML(url);
 
- const html=`
- <div class="result-card">
- ${safe}<br>
- Risk Score: ${label} (${score}%)
- <div class="risk-bar ${color}" style="width:${score}%"></div>
- <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
- </div>`;
-
- return {html,text:url+" → "+label,score,label,url,color};
+ return {
+  html:`
+  <div class="result-card ${color}">
+   ${safe}<br>
+   Risk Score: ${score}% (${label})
+   <ul>${reasons.map(r=>`<li>${r}</li>`).join("")}</ul>
+  </div>`,
+  text:url+" → "+label,
+  score,color
+ };
 }
 
-/* 🚀 ANALYZE */
+/* ================= MAIN ================= */
+
 function analyzeBatch(){
- playThemeSound();
+ playTheme();
 
  const urls=document.getElementById("url-input").value.split("\n");
- const results=document.getElementById("results");
 
- results.innerHTML="";
+ const res=document.getElementById("results");
+ res.innerHTML="";
  reportData="";
  graphData=[];
 
- urls.forEach(url=>{
-  if(!url.trim()) return;
+ urls.forEach(u=>{
+  if(!u.trim()) return;
 
-  const r=analyzeURL(url);
-  results.innerHTML+=r.html;
+  const r=analyzeURL(u);
+  res.innerHTML+=r.html;
   reportData+=r.text+"\n\n";
   graphData.push(r);
  });
@@ -310,50 +343,60 @@ function analyzeBatch(){
  renderGraph();
 }
 
-/* 📊 GRAPH */
+/* ================= GRAPH ================= */
+
 function renderGraph(){
- const graph=document.getElementById("graph");
- graph.innerHTML="";
+ const g=document.getElementById("graph");
+ g.innerHTML="";
+
+ let high=0,mid=0,low=0;
+
+ graphData.forEach(r=>{
+  if(r.score>=70) high++;
+  else if(r.score>=40) mid++;
+  else low++;
+ });
+
+ document.getElementById("summary").innerText=
+ `High: ${high} | Suspicious: ${mid} | Safe: ${low}`;
 
  graphData.forEach((r,i)=>{
-  const label=document.createElement("div");
-  label.innerText=`${i+1}. ${r.url} (${r.label})`;
+  const l=document.createElement("div");
+  l.innerText=`${i+1}. ${r.score}%`;
 
-  const bar=document.createElement("div");
-  bar.className="graph-bar";
-  bar.style.background=r.color;
-  bar.innerText=`${r.score}%`;
+  const b=document.createElement("div");
+  b.className="graph-bar";
+  b.style.background=r.color;
+  b.innerText=r.score+"%";
 
-  graph.appendChild(label);
-  graph.appendChild(bar);
+  g.appendChild(l);
+  g.appendChild(b);
 
-  setTimeout(()=>{bar.style.width=r.score+"%";},i*100);
+  setTimeout(()=>b.style.width=r.score+"%",i*100);
  });
 }
 
-/* COPY */
+/* ================= REPORT ================= */
+
 function copyReport(){
- playThemeSound();
-
- navigator.clipboard.writeText(reportData).then(()=>{
-  const t=document.getElementById("toast");
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),2000);
- });
+ navigator.clipboard.writeText(reportData);
 }
 
-/* DOWNLOAD */
 function downloadReport(){
- playThemeSound();
-
- const blob=new Blob([reportData]);
- const url=URL.createObjectURL(blob);
+ const b=new Blob([reportData]);
+ const u=URL.createObjectURL(b);
  const a=document.createElement("a");
- a.href=url;
+ a.href=u;
  a.download="report.txt";
  a.click();
- URL.revokeObjectURL(url);
 }
+
+/* ================= VOLUME ================= */
+
+function setMaster(v){master=v;}
+function setType(v){typeVol=v;}
+function setClick(v){clickVol=v;}
+function setThemeVol(v){themeVol=v;}
 
 </script>
 
