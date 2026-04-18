@@ -2,78 +2,126 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Phishing Detector PRO MAX FIXED</title>
+<title>Phishing Detector PRO</title>
 
 <style>
 
-body {
-  margin:0;
-  font-family:Arial;
-  overflow-x:hidden;
+/* 🌈 MODERN */
+.light {
+  background: linear-gradient(120deg,#89f7fe,#fbc2eb);
+  background-size:200% 200%;
+  animation:flow 8s infinite alternate;
+}
+@keyframes flow {
+  0%{background-position:0%}
+  100%{background-position:100%}
 }
 
+/* 🤖 AUTO */
+.auto { background:#eaf6ff; color:black; }
+
+/* 🌙 DARK */
+.dark { background:#121212; color:#eee; }
+
+/* 🟢 MATRIX */
+.matrix { background:black; color:#00ff9f; font-family:monospace; }
+
+/* ⚡ CYBER */
+.cyber {
+  background:#0a0015;
+  color:#ff2bd6;
+  animation: cyberPulse 2s infinite alternate;
+}
+@keyframes cyberPulse {
+  0% { box-shadow: 0 0 10px #ff00ff inset; }
+  100% { box-shadow: 0 0 30px #00f0ff inset; }
+}
+
+/* 📦 CONTAINER */
 .container {
   max-width:900px;
   margin:auto;
   padding:20px;
+  border-radius:12px;
 }
 
-/* THEMES */
-.auto { background:#eaf6ff; }
-.dark { background:#121212; color:#eee; }
-.light { background:linear-gradient(120deg,#89f7fe,#fbc2eb); }
-.matrix { background:black; color:#00ff9f; font-family:monospace; }
-.cyber { background:#0a0015; color:#ff2bd6; }
+/* THEME CONTAINERS */
+.light .container { background:rgba(255,255,255,0.9); backdrop-filter:blur(10px); }
+.dark .container { background:#1e1e1e; }
+.matrix .container { background:#000; border:1px solid #00ff9f; }
+.cyber .container { background:#120024; border:1px solid #00f0ff; }
+.auto .container { background:white; }
 
-/* UI */
-textarea {
-  width:100%;
-  height:100px;
-}
-
-button {
-  padding:10px;
-  margin:5px;
-  cursor:pointer;
+/* RESULT CARD */
+.result-card {
+  padding:15px;
+  margin-top:10px;
+  border-radius:10px;
+  word-break:break-all;
+  overflow-wrap:anywhere;
   transition:0.3s;
 }
-
-button:hover {
-  transform:scale(1.05);
-  box-shadow:0 0 12px cyan;
+.result-card:hover {
+  transform:scale(1.02);
+  box-shadow:0 0 15px cyan,0 0 25px magenta;
 }
 
-/* RESULT CARD (NO COLOR HERE NOW) */
-.result-card {
-  margin-top:10px;
-  padding:12px;
-  border-radius:10px;
-  background:rgba(255,255,255,0.08);
-  word-break:break-word;
-}
+/* RISK COLORS */
+.green{background:#2ecc71;}
+.yellow{background:#f1c40f;}
+.red{background:#e74c3c;}
 
-/* ONLY BAR COLORS */
 .risk-bar {
   height:10px;
   border-radius:5px;
   margin-top:5px;
 }
 
-.green { background:#2ecc71; }
-.yellow { background:#f1c40f; }
-.red { background:#e74c3c; }
+/* DASHBOARD */
+.dashboard {
+  margin-top:60px;
+  padding:25px;
+  border-top:2px solid rgba(255,255,255,0.2);
+}
+.cyber .dashboard {
+  box-shadow:0 0 15px #00f0ff;
+}
 
 /* GRAPH */
 .graph-bar {
   height:22px;
-  margin:5px 0;
+  margin:4px 0;
   color:white;
+  border-radius:5px;
+  width:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:5px;
-  width:0;
-  transition:1s;
+  font-weight:bold;
+  transition:width 1s;
+}
+
+/* TOAST */
+#toast {
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:black;
+  color:white;
+  padding:10px;
+  border-radius:6px;
+  opacity:0;
+  transition:0.5s;
+}
+#toast.show { opacity:1; }
+
+/* MATRIX CANVAS */
+#matrixCanvas {
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+  display:none;
 }
 
 </style>
@@ -81,216 +129,225 @@ button:hover {
 
 <body class="auto">
 
+<canvas id="matrixCanvas"></canvas>
+
 <div class="container">
 
-<h1>🔍 Phishing Detector PRO FIXED</h1>
+<div style="display:flex; justify-content:space-between;">
+<h1>🔍 Phishing Detector PRO</h1>
 
-<textarea id="url-input" placeholder="Enter URLs"></textarea>
+<select id="themeSelect">
+<option value="auto">🤖 Auto</option>
+<option value="light">🌈 Modern</option>
+<option value="dark">🌙 Dark</option>
+<option value="matrix">👾 Matrix</option>
+<option value="cyber">⚡ Cyberpunk</option>
+</select>
+</div>
 
-<br>
+<textarea id="url-input" placeholder="Enter URLs"></textarea><br>
 
-<button onclick="unlockAudio(); playClick(); analyzeBatch()">Analyze</button>
-<button onclick="playClick(); copyReport()">Copy</button>
-<button onclick="playClick(); downloadReport()">Download</button>
+<button onclick="analyzeBatch()">Analyze</button>
+<button onclick="copyReport()">📋 Copy</button>
+<button onclick="downloadReport()">⬇ Download</button>
 
-<h3>🔊 Volume</h3>
-<input type="range" min="0" max="1" step="0.1" value="0.8" oninput="setVolume(this.value)">
-
+<h2 id="alert-text"></h2>
 <div id="results"></div>
 
-<h2>📊 Dashboard</h2>
+<div class="dashboard">
+<h2>📊 Risk Dashboard</h2>
 <h3 id="summary"></h3>
 <div id="graph"></div>
+</div>
 
 </div>
 
+<div id="toast">Copied!</div>
+
 <script>
 
-/* ================= AUDIO FIX (IMPORTANT) ================= */
+const PHISHING=70, SUSPICIOUS=40;
+let reportData="", graphData=[];
 
-let audioUnlocked = false;
-let masterVol = 0.8;
+/* 🔊 SOUND */
+function playSound(){
+ const theme=document.body.className;
+ const sounds={
+  light:"https://www.soundjay.com/buttons/beep-01a.mp3",
+  dark:"https://www.soundjay.com/buttons/beep-02.mp3",
+  matrix:"https://www.soundjay.com/misc/sci-fi-sweep.wav",
+  cyber:"https://www.soundjay.com/electronic/sci-fi-bleep.wav",
+  auto:"https://www.soundjay.com/buttons/button-3.mp3"
+ };
+ new Audio(sounds[theme]).play();
+}
 
-const sounds = {
- click: new Audio("sounds/click.mp3"),
- key1: new Audio("sounds/key1.mp3"),
- key2: new Audio("sounds/key2.mp3"),
- space: new Audio("sounds/space.mp3"),
- enter: new Audio("sounds/enter.mp3"),
- backspace: new Audio("sounds/backspace.mp3")
+/* 🎭 THEME */
+function setTheme(theme){
+ localStorage.setItem("theme",theme);
+ document.body.className=theme;
+ document.getElementById("matrixCanvas").style.display =
+  (theme==="matrix")?"block":"none";
+}
+
+window.onload=()=>{
+ const saved=localStorage.getItem("theme")||"auto";
+ document.getElementById("themeSelect").value=saved;
+ setTheme(saved);
 };
 
-/* unlock audio (CRITICAL FIX) */
-function unlockAudio(){
- if(audioUnlocked) return;
- audioUnlocked = true;
+/* MATRIX RAIN */
+const canvas=document.getElementById("matrixCanvas");
+const ctx=canvas.getContext("2d");
+const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+let drops=[];
 
- Object.values(sounds).forEach(a=>{
-  a.volume = 0.0001;
-  a.play().then(()=>a.pause()).catch(()=>{});
+function resizeCanvas(){
+ canvas.width = window.innerWidth;
+ canvas.height = window.innerHeight;
+
+ const cols = Math.floor(canvas.width / 20);
+ drops = [];
+
+ for(let i=0;i<cols;i++){
+  drops[i] = Math.floor(Math.random() * canvas.height / 20);
+ }
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+function drawMatrix(){
+ if(document.body.className!=="matrix") return;
+
+ ctx.fillStyle="rgba(0,0,0,0.05)";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ ctx.fillStyle="#0f0";
+ ctx.font="15px monospace";
+
+ drops.forEach((y,i)=>{
+  const text=letters[Math.floor(Math.random()*letters.length)];
+  ctx.fillText(text,i*20,y*20);
+
+  if(y*20>canvas.height && Math.random()>0.975) drops[i]=0;
+  drops[i]++;
  });
 }
+setInterval(drawMatrix,50);
 
-/* safe play */
-function play(a,vol=1){
- if(!audioUnlocked) return;
-
- const audio = a.cloneNode();
- audio.volume = vol * masterVol;
- audio.play().catch(()=>{});
-}
-
-/* sounds */
-function playClick(){ play(sounds.click,0.8); }
-
-document.getElementById("url-input").addEventListener("keydown",e=>{
- if(!audioUnlocked) return;
-
- if(e.key===" ") play(sounds.space,0.6);
- else if(e.key==="Enter") play(sounds.enter,0.6);
- else if(e.key==="Backspace") play(sounds.backspace,0.5);
- else play(Math.random()>0.5?sounds.key1:sounds.key2,0.4);
-});
-
-/* volume */
-function setVolume(v){ masterVol=v; }
-
-/* ================= SAFE ESCAPE ================= */
-
-function escapeHTML(s){
- return s.replace(/[&<>"']/g,m=>({
- '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
- }[m]));
-}
-
-/* ================= ANALYSIS ================= */
-
-let reportData="",graphData=[];
-
+/* ANALYSIS */
 function analyzeURL(url){
  let score=0,reasons=[];
+ const safe=url.replace(/</g,"&lt;");
 
- url=url.trim();
+ try{ new URL(url.includes("://")?url:"http://"+url); }
+ catch{ score+=40; reasons.push("Invalid URL"); }
 
- if(!/^https?:\/\//i.test(url)){
-  score+=20; reasons.push("No HTTPS");
- }
-
- try{
-  const u=new URL(url.includes("://")?url:"http://"+url);
-
-  if(u.hostname.includes("xn--")){
-   score+=30; reasons.push("Punycode");
-  }
-
-  if(!/\.[a-z]{2,}$/i.test(u.hostname)){
-   score+=20; reasons.push("Bad domain");
-  }
-
- }catch{
-  score+=40; reasons.push("Invalid URL");
- }
-
- if(url.length>100){score+=15;reasons.push("Long URL");}
+ if(url.length>100){score+=30;reasons.push("Long URL");}
+ if((url.match(/\./g)||[]).length>5){score+=15;reasons.push("Too many dots");}
  if(url.includes("@")){score+=20;reasons.push("@ symbol");}
  if(/login|verify|secure|account/i.test(url)){
-  score+=20; reasons.push("Sensitive word");
+  score+=20; reasons.push("Keyword");
  }
+ if(!url.startsWith("https")){score+=20;reasons.push("No HTTPS");}
+ if(!url.includes(".")){score+=20;reasons.push("Invalid domain");}
 
- score=Math.min(score,100);
+ if(score===0) reasons.push("Safe URL");
 
  let label="Safe",color="green";
- if(score>=70){label="High Risk";color="red";}
- else if(score>=40){label="Suspicious";color="yellow";}
+ if(score>=PHISHING){label="Phishing";color="red";}
+ else if(score>=SUSPICIOUS){label="Suspicious";color="yellow";}
 
- const safe=escapeHTML(url);
+ const html=`
+ <div class="result-card">
+ ${safe}<br>
+ Risk: ${label} (${score}%)
+ <div class="risk-bar ${color}" style="width:${Math.min(score,100)}%"></div>
+ <ul>${reasons.map(r=>"<li>"+r+"</li>").join("")}</ul>
+ </div>`;
 
- return {
-  html:`
-  <div class="result-card">
-   ${safe}<br>
-   Risk Score: ${score}% (${label})
-
-   <div class="risk-bar ${color}" style="width:${score}%"></div>
-
-   <ul>${reasons.map(r=>`<li>${r}</li>`).join("")}</ul>
-  </div>`,
-  text:url+" → "+label,
-  score,color
- };
+ return {html,text:url+" → "+label,score,label,url,color};
 }
 
-/* ================= MAIN ================= */
-
+/* ANALYZE */
 function analyzeBatch(){
- playClick();
-
  const urls=document.getElementById("url-input").value.split("\n");
+ const results=document.getElementById("results");
 
- const res=document.getElementById("results");
- res.innerHTML="";
+ results.innerHTML="";
  reportData="";
  graphData=[];
 
- urls.forEach(u=>{
-  if(!u.trim()) return;
+ urls.forEach(url=>{
+  url=url.trim();
+  if(!url) return;
 
-  const r=analyzeURL(u);
-  res.innerHTML+=r.html;
+  const r=analyzeURL(url);
+  results.innerHTML+=r.html;
   reportData+=r.text+"\n\n";
   graphData.push(r);
+
+  playSound();
  });
 
  renderGraph();
 }
 
-/* ================= GRAPH ================= */
-
+/* GRAPH */
 function renderGraph(){
- const g=document.getElementById("graph");
- g.innerHTML="";
+ const graph=document.getElementById("graph");
+ graph.innerHTML="";
 
- let high=0,mid=0,low=0;
+ const high = graphData.filter(x=>x.score>=70).length;
+ const mid = graphData.filter(x=>x.score>=40 && x.score<70).length;
+ const low = graphData.length - high - mid;
 
- graphData.forEach(r=>{
-  if(r.score>=70) high++;
-  else if(r.score>=40) mid++;
-  else low++;
- });
-
- document.getElementById("summary").innerText=
- `High: ${high} | Suspicious: ${mid} | Safe: ${low}`;
+ document.getElementById("summary").innerText =
+ `🚨 High: ${high} | ⚠️ Suspicious: ${mid} | ✅ Safe: ${low}`;
 
  graphData.forEach((r,i)=>{
-  const l=document.createElement("div");
-  l.innerText=r.text;
 
-  const b=document.createElement("div");
-  b.className="graph-bar";
-  b.style.background=r.color;
-  b.innerText=r.score+"%";
+  const shortURL = r.url.length>25 ? r.url.slice(0,25)+"..." : r.url;
 
-  g.appendChild(l);
-  g.appendChild(b);
+  const label = document.createElement("div");
+  label.style.marginTop="10px";
+  label.innerText = `${i+1}. ${shortURL} (${r.label})`;
 
-  setTimeout(()=>b.style.width=r.score+"%",i*100);
+  const bar = document.createElement("div");
+  bar.className="graph-bar";
+  bar.style.background=r.color;
+  bar.innerText=`${r.score}%`;
+
+  graph.appendChild(label);
+  graph.appendChild(bar);
+
+  setTimeout(()=>{ bar.style.width=r.score+"%"; },i*150);
  });
 }
 
-/* ================= REPORT ================= */
-
+/* COPY */
 function copyReport(){
- navigator.clipboard.writeText(reportData);
+ navigator.clipboard.writeText(reportData).then(()=>{
+  const t=document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2000);
+ });
 }
 
+/* DOWNLOAD */
 function downloadReport(){
- const b=new Blob([reportData]);
- const u=URL.createObjectURL(b);
+ const blob=new Blob([reportData]);
+ const url=URL.createObjectURL(blob);
  const a=document.createElement("a");
- a.href=u;
+ a.href=url;
  a.download="report.txt";
  a.click();
+ URL.revokeObjectURL(url);
 }
+
+document.getElementById("themeSelect").onchange=function(){
+ setTheme(this.value);
+};
 
 </script>
 
