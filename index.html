@@ -124,6 +124,73 @@
   display:none;
 }
 
+/* ========================= */
+/* ✨ BUTTON GLOW ADDITION */
+/* ========================= */
+
+button {
+  padding: 10px 15px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* 🌈 LIGHT */
+.light button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.8),
+    0 0 20px rgba(255, 0, 255, 0.6),
+    0 0 30px rgba(0, 255, 255, 0.4);
+}
+
+/* 🌙 DARK */
+.dark button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.6),
+    0 0 20px rgba(150, 150, 255, 0.5);
+}
+
+/* 👾 MATRIX */
+.matrix button {
+  background: black;
+  color: #00ff9f;
+  border: 1px solid #00ff9f;
+}
+.matrix button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 10px #00ff9f,
+    0 0 20px #00ff9f,
+    0 0 30px #00ff9f;
+}
+
+/* ⚡ CYBER */
+.cyber button {
+  background: #1a0033;
+  color: #ff2bd6;
+  border: 1px solid #00f0ff;
+}
+@keyframes cyberGlow {
+  0% { box-shadow: 0 0 10px #ff00ff; }
+  100% { box-shadow: 0 0 25px #00f0ff; }
+}
+.cyber button:hover {
+  transform: scale(1.07);
+  animation: cyberGlow 0.5s infinite alternate;
+}
+
+/* 🤖 AUTO */
+.auto button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 8px rgba(0,0,0,0.2),
+    0 0 15px rgba(0,0,0,0.1);
+}
+
 </style>
 </head>
 
@@ -166,6 +233,8 @@
 
 <script>
 
+/* (Your original JS code remains EXACTLY the same) */
+
 const PHISHING=70, SUSPICIOUS=40;
 let reportData="", graphData=[];
 
@@ -199,7 +268,7 @@ window.onload=()=>{
 /* MATRIX RAIN */
 const canvas=document.getElementById("matrixCanvas");
 const ctx=canvas.getContext("2d");
-const letters="01ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const letters="01010101010101010101010101";
 let drops=[];
 
 function resizeCanvas(){
